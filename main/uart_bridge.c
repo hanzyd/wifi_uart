@@ -19,7 +19,6 @@
 #define UART_BUF_SIZE 1024
 #define SRV_PORT 8888
 
-
 static QueueHandle_t uart_queue;
 
 static char rx_buff[128];
@@ -45,7 +44,7 @@ static int init_wifi_server(int backlog)
 	// setsockopt(srv_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
 	// setsockopt(srv_sock, SOL_SOCKET, TCP_NODELAY, &opt, sizeof(int));
 
-	int err = bind(srv_sock, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+	int err = bind(srv_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	if (err != 0) {
 		close(srv_sock);
 		return -1;
@@ -68,7 +67,7 @@ static int wait_for_wifi_client(int srv_sock)
 	socklen_t len = sizeof(addr);
 	int sock;
 
-	sock = accept(srv_sock, (struct sockaddr*)&addr, &len);
+	sock = accept(srv_sock, (struct sockaddr *)&addr, &len);
 	if (sock < 0)
 		return sock;
 
@@ -80,9 +79,9 @@ static int wait_for_wifi_client(int srv_sock)
 	return sock;
 }
 
-static void recv_wifi_write_uart_task(void* arg)
+static void recv_wifi_write_uart_task(void *arg)
 {
-	int* client = (int*)arg;
+	int *client = (int *)arg;
 	ssize_t len;
 
 	/* Block for 100ms. */
@@ -107,7 +106,6 @@ static void recv_wifi_write_uart_task(void* arg)
 	vTaskDelete(NULL);
 }
 
-
 static void init_uart(void)
 {
 	uart_config_t uart_config = {
@@ -125,7 +123,6 @@ static void init_uart(void)
 	uart_driver_install(UART_NUM_0, UART_BUF_SIZE * 2, 0, 2, &uart_queue, 0);
 	uart_param_config(UART_NUM_0, &uart_config);
 }
-
 
 static bool read_uart_send_wifi(int client, size_t length)
 {
@@ -156,21 +153,21 @@ static bool read_uart_send_wifi(int client, size_t length)
 	return true;
 }
 
-static void read_uart_send_wifi_task(void* arg)
+static void read_uart_send_wifi_task(void *arg)
 {
-	int* client = (int*)arg;
+	int *client = (int *)arg;
 	uart_event_t event;
 
 	for (;;) {
 
 		// Waiting for UART event.
-		if (xQueueReceive(uart_queue, (void*)&event, portMAX_DELAY)) {
+		if (xQueueReceive(uart_queue, (void *)&event, portMAX_DELAY)) {
 
 			switch (event.type) {
 				// Event of UART receiving data
 				// We'd better handler data event fast, there would be much more
-				// data events than other types of events. If we take too much time
-				// on data event, the queue might be full.
+				// data events than other types of events. If we take too much
+				// time on data event, the queue might be full.
 			case UART_DATA:
 				if (*client < 0) {
 					uart_flush_input(UART_NUM_0);				
@@ -219,9 +216,7 @@ static void read_uart_send_wifi_task(void* arg)
 	vTaskDelete(NULL);
 }
 
-
-
-void bridge_task(void* pvParameters)
+void bridge_task(void *pvParameters)
 {
 	int client = -1;
 	int srv_sock;
