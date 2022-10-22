@@ -9,12 +9,9 @@
 #include "freertos/FreeRTOS.h"
 #include "driver/uart.h"
 #include "esp_event.h"
-#include "esp_system.h"
 #include <string.h>
 
-#include "lwip/err.h"
 #include "lwip/sockets.h"
-#include "lwip/sys.h"
 
 #define UART_BUF_SIZE 1024
 #define SRV_PORT 8888
