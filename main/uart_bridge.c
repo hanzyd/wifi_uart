@@ -297,6 +297,7 @@ static bool init_wifi_station_and_connect(void)
 		wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 	}
 
+	esp_wifi_set_storage(WIFI_STORAGE_RAM);
 	esp_wifi_set_mode(WIFI_MODE_STA);
 	esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
 	esp_wifi_start();
