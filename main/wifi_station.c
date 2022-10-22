@@ -78,13 +78,13 @@ static bool init_wifi_station_and_connect(void)
 
     tcpip_adapter_init();
 
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_event_loop_create_default();
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    esp_wifi_init(&cfg);
 
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler, NULL));
+    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler, NULL);
 
     wifi_config_t wifi_config = {
         .sta = {
@@ -101,9 +101,9 @@ static bool init_wifi_station_and_connect(void)
         wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     }
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+    esp_wifi_start();
 
     /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
      * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
@@ -123,7 +123,7 @@ void bridge_task(void *pvParameters);
 
 void app_main()
 {
-    ESP_ERROR_CHECK(nvs_flash_init());
+    nvs_flash_init();
 
     bool ok = init_wifi_station_and_connect();
 	if (!ok)
