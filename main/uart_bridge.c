@@ -19,6 +19,7 @@
 #define UART_BUF_SIZE 1024
 #define SRV_PORT 8888
 
+
 static QueueHandle_t uart_queue;
 
 static char rx_buff[128];
@@ -84,19 +85,23 @@ static void recv_wifi_write_uart_task(void* arg)
 	int* client = (int*)arg;
 	ssize_t len;
 
+	/* Block for 100ms. */
+	const TickType_t xDelay = 100 / portTICK_PERIOD_MS;
+
 	while (true) {
 
-		if (*client < 0)
-			continue;
-
-		len = recv(*client, rx_buff, sizeof(rx_buff), 0);
-		if (len <= 0) {
-			close(*client);
-			*client = -1;
+		if (*client < 0) {
+			vTaskDelay(xDelay);
 			continue;
 		}
 
-		uart_write_bytes(UART_NUM_0, rx_buff, len);
+		len = recv(*client, rx_buff, sizeof(rx_buff), 0);
+		if (len > 0) {
+			uart_write_bytes(UART_NUM_0, rx_buff, len);
+		} else {
+			close(*client);
+			*client = -1;
+		}
 	}
 
 	vTaskDelete(NULL);
@@ -143,10 +148,8 @@ static bool read_uart_send_wifi(int client, size_t length)
 			if (len == 0)
 				retry++;
 
-			if (len < 0 || retry > 5) {
-				close(client);
+			if (len < 0 || retry > 5)
 				return false;
-			}
 		}
 	}
 
@@ -155,7 +158,7 @@ static bool read_uart_send_wifi(int client, size_t length)
 
 static void read_uart_send_wifi_task(void* arg)
 {
-	int client = -1;
+	int* client = (int*)arg;
 	uart_event_t event;
 
 	for (;;) {
@@ -169,12 +172,14 @@ static void read_uart_send_wifi_task(void* arg)
 				// data events than other types of events. If we take too much time
 				// on data event, the queue might be full.
 			case UART_DATA:
-				if (client < 0) {
+				if (*client < 0) {
 					uart_flush_input(UART_NUM_0);				
 				} else {
-					bool ok = read_uart_send_wifi(client, event.size);
-					if (!ok) 
-						client = -1;
+					bool ok = read_uart_send_wifi(*client, event.size);
+					if (!ok) {
+						close(*client);
+						*client = -1;
+					}
 				}
 				break;
 
@@ -204,11 +209,6 @@ static void read_uart_send_wifi_task(void* arg)
 			case UART_FRAME_ERR:
 				break;
 
-				// Event of UART frame error
-			case UART_EVENT_MAX:
-				client = (int)event.size;
-				break;
-
 				// Others
 			default:
 				break;
@@ -219,6 +219,8 @@ static void read_uart_send_wifi_task(void* arg)
 	vTaskDelete(NULL);
 }
 
+
+
 void bridge_task(void* pvParameters)
 {
 	int client = -1;
@@ -226,12 +228,12 @@ void bridge_task(void* pvParameters)
 
 	srv_sock = init_wifi_server(2); // Initial server configuration.
 	if (srv_sock < 0)
-		return;
+		vTaskDelete(NULL);
 
 	init_uart();
 
-	xTaskCreate(read_uart_send_wifi_task, "u2w", 512, NULL, 2, NULL);
-	xTaskCreate(recv_wifi_write_uart_task, "w2u", 512, NULL, 2, NULL);
+	xTaskCreate(read_uart_send_wifi_task, "u2w", 1024, &client, 2, NULL);
+	xTaskCreate(recv_wifi_write_uart_task, "w2u", 1024, &client, 2, NULL);
 
 	for (;;) {
 		int new_client;
