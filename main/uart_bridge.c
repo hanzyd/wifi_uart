@@ -257,6 +257,8 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
 			xEventGroupSetBits(g_wifi_events, WIFI_FAIL_BIT);
 		}
 		break;
+	default:
+		break;
 	}
 }
 
@@ -267,6 +269,8 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base,
 	case IP_EVENT_STA_GOT_IP:
 		g_retry_num = 0;
 		xEventGroupSetBits(g_wifi_events, WIFI_CONNECTED_BIT);
+		break;
+	default:
 		break;
 	}
 }
