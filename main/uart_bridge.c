@@ -275,6 +275,9 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base,
 	}
 }
 
+
+void httpd_register_for_events(void);
+
 static bool init_wifi_station_and_connect(void)
 {
 	g_wifi_events = xEventGroupCreate();
@@ -286,6 +289,8 @@ static bool init_wifi_station_and_connect(void)
 							   &wifi_event_handler, NULL);
 	esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler,
 							   NULL);
+
+	httpd_register_for_events();
 
 	wifi_config_t wifi_config = {
 		.sta = {.ssid = EXAMPLE_ESP_WIFI_SSID,
@@ -360,4 +365,5 @@ void app_main()
     esp_event_loop_create_default();
 
 	xTaskCreate(bridge_task, "bridge_task", 1024 * 2, NULL, 2, NULL);
+
 }
