@@ -69,6 +69,36 @@ static httpd_uri_t echo = {
 	.user_ctx = NULL
 };
 
+
+void star_reset_procedure(void);
+
+/* An HTTP PUT handler */
+static esp_err_t reset_put_handler(httpd_req_t *req)
+{
+	char buf;
+	int ret;
+
+	if ((ret = httpd_req_recv(req, &buf, 1)) <= 0) {
+		if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+			httpd_resp_send_408(req);
+		}
+		return ESP_FAIL;
+	}
+
+	/* Respond with empty body */
+	httpd_resp_send(req, NULL, 0);
+
+	star_reset_procedure();
+	return ESP_OK;
+}
+
+static httpd_uri_t reset = {
+	.uri = "/reset",
+	.method = HTTP_PUT,
+	.handler = reset_put_handler,
+	.user_ctx = NULL
+};
+
 /* An HTTP PUT handler. This demonstrates realtime
  * registration and deregistration of URI handlers
  */
@@ -116,6 +146,7 @@ static httpd_handle_t start_webserver(void)
 		httpd_register_uri_handler(server, &hello);
 		httpd_register_uri_handler(server, &echo);
 		httpd_register_uri_handler(server, &ctrl);
+		httpd_register_uri_handler(server, &reset);
 		return server;
 	}
 
