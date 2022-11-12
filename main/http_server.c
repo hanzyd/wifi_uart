@@ -10,13 +10,13 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_system.h"
 #include "esp_event.h"
+#include "esp_system.h"
 
 #include <esp_http_server.h>
 
 /* An HTTP GET handler */
-static esp_err_t ping_get_handler(httpd_req_t *req)
+static esp_err_t ping_endpoint(httpd_req_t *req)
 {
 	/* Send response with custom headers and body set as the
 	 * string passed in user context*/
@@ -26,17 +26,16 @@ static esp_err_t ping_get_handler(httpd_req_t *req)
 	return ESP_OK;
 }
 
-static httpd_uri_t hello = {
+static httpd_uri_t ping = {
 	.uri = "/ping",
 	.method = HTTP_GET,
-	.handler = ping_get_handler,
+	.handler = ping_endpoint,
 	/* Let's pass response string in user
 	 * context to demonstrate it's usage */
 	.user_ctx = "pong!\n"
 };
 
-/* An HTTP POST handler */
-static esp_err_t echo_post_handler(httpd_req_t *req)
+static esp_err_t echo_endpoint(httpd_req_t *req)
 {
 	char buf[100];
 	int ret, remaining = req->content_len;
@@ -65,15 +64,13 @@ static esp_err_t echo_post_handler(httpd_req_t *req)
 static httpd_uri_t echo = {
 	.uri = "/echo",
 	.method = HTTP_POST,
-	.handler = echo_post_handler,
+	.handler = echo_endpoint,
 	.user_ctx = NULL
 };
 
-
 void star_reset_procedure(void);
 
-/* An HTTP PUT handler */
-static esp_err_t reset_put_handler(httpd_req_t *req)
+static esp_err_t reset_endpoint(httpd_req_t *req)
 {
 	char buf;
 	int ret;
@@ -94,44 +91,56 @@ static esp_err_t reset_put_handler(httpd_req_t *req)
 
 static httpd_uri_t reset = {
 	.uri = "/reset",
-	.method = HTTP_PUT,
-	.handler = reset_put_handler,
+	.method = HTTP_POST,
+	.handler = reset_endpoint,
 	.user_ctx = NULL
 };
 
-/* An HTTP PUT handler. This demonstrates realtime
- * registration and deregistration of URI handlers
- */
-static esp_err_t ctrl_put_handler(httpd_req_t *req)
+esp_err_t upgrade_endpoint(httpd_req_t *req);
+
+static httpd_uri_t upgrade = {
+	.uri = "/upgrade",
+	.method = HTTP_POST,
+	.handler = upgrade_endpoint,
+	.user_ctx = NULL
+};
+
+static const char *reset_codes[] = {
+    "unknown",
+    "power-on",
+    "external pin",
+    "esp_restart",
+    "exception/panic",
+    "interrupt watchdog",
+    "task watchdog",
+    "other watchdogs",
+    "exiting deep sleep mode",
+    "brownout reset",
+    "reset over SDIO",
+    "fast reboot"
+};
+
+esp_err_t info_endpoint(httpd_req_t *req)
 {
-	char buf;
-	int ret;
+	char resp_str[128];
+	const char *why;
 
-	if ((ret = httpd_req_recv(req, &buf, 1)) <= 0) {
-		if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-			httpd_resp_send_408(req);
-		}
-		return ESP_FAIL;
-	}
+	esp_reset_reason_t rst = esp_reset_reason();
 
-	if (buf == '0') {
-		/* Handler can be unregistered using the uri string */
-		httpd_unregister_uri(req->handle, "/hello");
-		httpd_unregister_uri(req->handle, "/echo");
-	} else {
-		httpd_register_uri_handler(req->handle, &hello);
-		httpd_register_uri_handler(req->handle, &echo);
-	}
+	if (rst >= sizeof(reset_codes)/sizeof(reset_codes[0]))
+		why = "unknown";
+	else
+		why = reset_codes[rst];
 
-	/* Respond with empty body */
-	httpd_resp_send(req, NULL, 0);
+	snprintf(resp_str, sizeof(resp_str), "Reset: %s\n", why);
+	httpd_resp_send(req, resp_str, strlen(resp_str));
 	return ESP_OK;
 }
 
-static httpd_uri_t ctrl = {
-	.uri = "/ctrl",
-	.method = HTTP_PUT,
-	.handler = ctrl_put_handler,
+static httpd_uri_t info = {
+	.uri = "/info",
+    .method = HTTP_GET,
+	.handler = info_endpoint,
 	.user_ctx = NULL
 };
 
@@ -143,10 +152,11 @@ static httpd_handle_t start_webserver(void)
 	// Start the httpd server
 	if (httpd_start(&server, &config) == ESP_OK) {
 		// Set URI handlers
-		httpd_register_uri_handler(server, &hello);
+		httpd_register_uri_handler(server, &ping);
 		httpd_register_uri_handler(server, &echo);
-		httpd_register_uri_handler(server, &ctrl);
+		httpd_register_uri_handler(server, &upgrade);
 		httpd_register_uri_handler(server, &reset);
+		httpd_register_uri_handler(server, &info);
 		return server;
 	}
 
