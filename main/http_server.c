@@ -106,7 +106,7 @@ esp_err_t info_endpoint(httpd_req_t *req)
 {
 	const esp_partition_t* part;
 	char resp_str[128];
-	const char *why, *label;
+	const char *why, *label, *app;
 
 	part = esp_ota_get_running_partition();
 	if (part)
@@ -121,7 +121,14 @@ esp_err_t info_endpoint(httpd_req_t *req)
 	else
 		why = reset_codes[rst];
 
-	snprintf(resp_str, sizeof(resp_str), "Reset: %s Partition: %s\n", why, label);
+	if (strcmp(label, "ota_0") == 0)
+		app = "app1.bin";
+	else if (strcmp(label, "ota_1") == 0)
+		app = "app2.bin";
+	else
+		app = "unknown";
+
+	snprintf(resp_str, sizeof(resp_str), "Reset: %s, Application: %s\n", why, app);
 	httpd_resp_send(req, resp_str, strlen(resp_str));
 	return ESP_OK;
 }
