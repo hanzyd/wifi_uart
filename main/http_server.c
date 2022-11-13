@@ -16,25 +16,6 @@
 #include <esp_http_server.h>
 #include <esp_ota_ops.h>
 
-/* An HTTP GET handler */
-static esp_err_t ping_endpoint(httpd_req_t *req)
-{
-	/* Send response with custom headers and body set as the
-	 * string passed in user context*/
-	const char *resp_str = (const char *)req->user_ctx;
-	httpd_resp_send(req, resp_str, strlen(resp_str));
-
-	return ESP_OK;
-}
-
-static httpd_uri_t ping = {
-	.uri = "/ping",
-	.method = HTTP_GET,
-	.handler = ping_endpoint,
-	/* Let's pass response string in user
-	 * context to demonstrate it's usage */
-	.user_ctx = "pong!\n"
-};
 
 static esp_err_t echo_endpoint(httpd_req_t *req)
 {
@@ -160,7 +141,6 @@ static httpd_handle_t start_webserver(void)
 	// Start the httpd server
 	if (httpd_start(&server, &config) == ESP_OK) {
 		// Set URI handlers
-		httpd_register_uri_handler(server, &ping);
 		httpd_register_uri_handler(server, &echo);
 		httpd_register_uri_handler(server, &upgrade);
 		httpd_register_uri_handler(server, &reset);
