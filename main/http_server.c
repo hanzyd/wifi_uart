@@ -107,6 +107,7 @@ esp_err_t info_endpoint(httpd_req_t *req)
 	const esp_partition_t* part;
 	char resp_str[128];
 	const char *why, *label, *app;
+	const esp_app_desc_t *desc;
 
 	part = esp_ota_get_running_partition();
 	if (part)
@@ -128,7 +129,11 @@ esp_err_t info_endpoint(httpd_req_t *req)
 	else
 		app = "unknown";
 
-	snprintf(resp_str, sizeof(resp_str), "Reset: %s, Application: %s\n", why, app);
+	desc = esp_ota_get_app_description();
+
+	snprintf(resp_str, sizeof(resp_str),
+			 "Reset: %s, Active: %s, Name: %s, Version: %s\n", why, app,
+			 desc->project_name, desc->version);
 	httpd_resp_send(req, resp_str, strlen(resp_str));
 	return ESP_OK;
 }
