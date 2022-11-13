@@ -14,6 +14,7 @@
 #include "esp_system.h"
 
 #include <esp_http_server.h>
+#include <esp_ota_ops.h>
 
 /* An HTTP GET handler */
 static esp_err_t ping_endpoint(httpd_req_t *req)
@@ -122,8 +123,15 @@ static const char *reset_codes[] = {
 
 esp_err_t info_endpoint(httpd_req_t *req)
 {
+	const esp_partition_t* part;
 	char resp_str[128];
-	const char *why;
+	const char *why, *label;
+
+	part = esp_ota_get_running_partition();
+	if (part)
+		label = part->label;
+	else
+		label = "unknown";
 
 	esp_reset_reason_t rst = esp_reset_reason();
 
@@ -132,7 +140,7 @@ esp_err_t info_endpoint(httpd_req_t *req)
 	else
 		why = reset_codes[rst];
 
-	snprintf(resp_str, sizeof(resp_str), "Reset: %s\n", why);
+	snprintf(resp_str, sizeof(resp_str), "Reset: %s Partition: %s\n", why, label);
 	httpd_resp_send(req, resp_str, strlen(resp_str));
 	return ESP_OK;
 }
