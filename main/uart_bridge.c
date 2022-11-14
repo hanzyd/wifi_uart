@@ -325,6 +325,7 @@ static bool init_wifi_station_and_connect(void)
 	if (bits & WIFI_CONNECTED_BIT)
 		return true;
 
+	esp_wifi_stop();
 	return false;
 }
 
