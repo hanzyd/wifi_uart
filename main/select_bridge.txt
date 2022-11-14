@@ -1,0 +1,265 @@
+/* WiFi station Example
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
+#include "driver/uart.h"
+#include "esp_event.h"
+#include "esp_system.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include <string.h>
+
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+
+#define UART_BUF_SIZE 1024
+#define SRV_PORT 8888
+
+static QueueHandle_t uart_queue;
+
+static char rx_buff[128];
+static uint8_t tx_buff[128];
+
+static int init_wifi_server(int backlog)
+{
+	struct sockaddr_in srv_addr;
+	int srv_sock;
+
+	srv_addr.sin_family = AF_INET;
+	// Grabs connected ip address which is set by the wifi_init_sta
+	srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	srv_addr.sin_port = htons(SRV_PORT);
+
+	// initialize tcp socket AF_INET refers to IPV4 addresses and
+	// SOCK_STREAM saids initiate socket as tcp socket.
+	srv_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+	if (srv_sock < 0)
+		return -1;
+
+	// int opt = 1;
+	// setsockopt(srv_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+	// setsockopt(srv_sock, SOL_SOCKET, TCP_NODELAY, &opt, sizeof(int));
+
+	int err = bind(srv_sock, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+	if (err != 0) {
+		close(srv_sock);
+		return -1;
+	}
+
+	err = listen(srv_sock, backlog);
+	if (err != 0) {
+		close(srv_sock);
+		return -1;
+	}
+
+	// fcntl(srv_sock, F_SETFL, O_NONBLOCK);
+
+	return srv_sock;
+}
+
+static int accept_wifi_client(int srv_sock)
+{
+	struct sockaddr_in addr;
+	socklen_t len = sizeof(addr);
+	int sock;
+
+	sock = accept(srv_sock, (struct sockaddr*)&addr, &len);
+	if (sock < 0)
+		return sock;
+
+	// fcntl(sock, F_SETFL, O_NONBLOCK);
+
+	int opt = 1;
+	setsockopt(sock, SOL_SOCKET, TCP_NODELAY, &opt, sizeof(int));
+
+	return sock;
+}
+
+
+static int init_and_open_uart(void)
+{
+	int fd;
+
+	uart_config_t uart_config = {
+		// writing down the conditions of the uart.
+		.baud_rate = 115200,
+		.data_bits = UART_DATA_8_BITS,
+		.parity = UART_PARITY_DISABLE,
+		.stop_bits = UART_STOP_BITS_1,
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+	};
+
+	uart_param_config(UART_NUM_0, &uart_config);
+
+	// We won't use a buffer for sending data.
+	// starting UART with a rx and tx buffer of 2048
+	// with no queue and no interrupt function.
+	uart_driver_install(UART_NUM_0, UART_BUF_SIZE * 2, 0, 2, NULL, 0);
+
+	for (int cnt = 0; cnt < 10; cnt++) {
+		fd = open("/dev/uart/0", O_RDWR);
+		if (fd != -1) {
+	        // We have a driver now installed so set up the read/write 
+			// functions to use driver also.
+        	esp_vfs_dev_uart_use_driver(UART_NUM_0);
+			return fd;
+		}
+
+		vTaskDelay(5000 / portTICK_PERIOD_MS);
+	}
+
+	return fd;
+}
+
+
+static void read_uart_send_wifi_task(void* arg)
+{
+	int client = -1;
+	uart_event_t event;
+
+	for (;;) {
+
+		// Waiting for UART event.
+		if (xQueueReceive(uart_queue, (void*)&event, portMAX_DELAY)) {
+
+			switch (event.type) {
+				// Event of UART receiving data
+				// We'd better handler data event fast, there would be much more
+				// data events than other types of events. If we take too much time
+				// on data event, the queue might be full.
+			case UART_DATA:
+				if (client < 0) {
+					uart_flush_input(UART_NUM_0);				
+				} else {
+					bool ok = read_uart_send_wifi(client, event.size);
+					if (!ok) 
+						client = -1;
+				}
+				break;
+
+				// Event of HW FIFO overflow detected
+			case UART_FIFO_OVF:
+				// If fifo overflow happened, you should consider adding flow
+				// control for your application. The ISR has already reset the
+				// rx FIFO, As an example, we directly flush the rx buffer here
+				// in order to read more data.
+				uart_flush_input(UART_NUM_0);
+				xQueueReset(uart_queue);
+				break;
+
+				// Event of UART ring buffer full
+			case UART_BUFFER_FULL:
+				// If buffer full happened, you should consider increasing your
+				// buffer size As an example, we directly flush the rx buffer
+				// here in order to read more data.
+				uart_flush_input(UART_NUM_0);
+				xQueueReset(uart_queue);
+				break;
+
+			case UART_PARITY_ERR:
+				break;
+
+				// Event of UART frame error
+			case UART_FRAME_ERR:
+				break;
+
+			case UART_EVENT_MAX:
+				client = (int)event.size;
+				break;
+
+				// Others
+			default:
+				break;
+			}
+		}
+	}
+
+}
+
+void bridge_task(void* pvParameters)
+{
+	uart_event_t event;
+	fd_set read_set;
+	fd_set write_set;
+	int client_sock = -1;
+	int srv_sock;
+	int uart_fd;
+	int max_fd;
+	int ret;
+	char buf;
+	ssize_t len;
+
+	srv_sock = init_wifi_server(2); // Initial server configuration.
+	if (srv_sock < 0)
+		abort();
+
+	uart_fd = init_and_open_uart();
+	if (uart_fd < 0)
+		abort();
+
+	for (;;) {
+
+		max_fd = 0;
+		FD_ZERO(&read_set);
+		FD_ZERO(&write_set);
+
+		FD_SET(srv_sock, &read_set);
+		FD_SET(uart_fd, &read_set);
+		FD_SET(uart_fd, &write_set);
+
+		if (uart_fd > max_fd)
+			max_fd = uart_fd;
+
+		if (srv_sock > max_fd)
+			max_fd = srv_sock;
+
+		if (client_sock > 0) {
+			FD_SET(client_sock, &read_set);
+			FD_SET(client_sock, &write_set);
+
+			if (client_sock > max_fd)
+				max_fd = client_sock;
+		}
+
+		ret = select(max_fd + 1, &read_set, &write_set, NULL, NULL);
+		if (ret <= 0)
+			continue;
+
+		if (FD_ISSET(srv_sock, &read_set)) {
+			int new_client;
+
+			new_client = accept_wifi_client(srv_sock);
+			if (new_client >= 0) {
+				if (client_sock >= 0) {
+					close(new_client);
+				} else {
+					client_sock = new_client;
+				}
+			}
+		}
+
+		if (FD_ISSET(client_sock, &read_set) && FD_ISSET(uart_fd, &write_set)) {
+			len = recv(client_sock, &buf, 1, 0);
+			if (len < 0) {
+				close(client_sock);
+				client_sock = -1;
+			} else {
+				write(uart_fd, &buf, 1);
+			}
+		}
+
+		if (FD_ISSET(client_sock, &write_set) && FD_ISSET(uart_fd, &read_set)) {
+
+			len = read(uart_fd, &buf, 1);
+			if (len > 0) {
+				send(client_sock, &buf, 1);
+			}
+		}
+	}
+
+	vTaskDelete(NULL);
+}
