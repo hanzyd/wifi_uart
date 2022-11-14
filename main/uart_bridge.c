@@ -280,6 +280,9 @@ void httpd_register_for_events(void);
 
 static bool init_wifi_station_and_connect(void)
 {
+	wifi_config_t user_config, *config;
+	esp_err_t sta;
+
 	g_wifi_events = xEventGroupCreate();
 
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -292,23 +295,24 @@ static bool init_wifi_station_and_connect(void)
 
 	httpd_register_for_events();
 
-	wifi_config_t wifi_config = {
-		.sta = {.ssid = EXAMPLE_ESP_WIFI_SSID,
-				.password = EXAMPLE_ESP_WIFI_PASS},
+	wifi_config_t factory_config = {
+		.sta = {
+			.ssid = EXAMPLE_ESP_WIFI_SSID,
+			.password = EXAMPLE_ESP_WIFI_PASS,
+			.threshold.authmode = WIFI_AUTH_WPA2_PSK
+		},
 	};
 
-	/* Setting a password implies station will connect to all security modes
-	 * including WEP/WPA. However these modes are deprecated and not advisable
-	 * to be used. Incase your Access point doesn't support WPA2, these mode can
-	 * be enabled by commenting below line */
-
-	if (strlen((char *)wifi_config.sta.password)) {
-		wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-	}
-
-	esp_wifi_set_storage(WIFI_STORAGE_RAM);
+	esp_wifi_set_storage(WIFI_STORAGE_FLASH);
 	esp_wifi_set_mode(WIFI_MODE_STA);
-	esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+
+	sta = esp_wifi_get_config(ESP_IF_WIFI_STA, &user_config);
+	if (sta == ESP_OK)
+		config = &user_config;
+	else
+		config = &factory_config;
+
+	esp_wifi_set_config(ESP_IF_WIFI_STA, config);
 	esp_wifi_start();
 
 	/* Waiting until either the connection is established (WIFI_CONNECTED_BIT)
