@@ -46,9 +46,8 @@
 static EventGroupHandle_t g_wifi_events;
 static int g_retry_num = 0;
 
-
-static void wifi_event_handler(void *arg, esp_event_base_t event_base,
-							   int32_t event_id, void *event_data)
+static void wifi_sta_events(void *arg, esp_event_base_t event_base,
+							int32_t event_id, void *event_data)
 {
 	switch (event_id) {
 	case WIFI_EVENT_STA_START:
@@ -68,8 +67,8 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
 	}
 }
 
-static void ip_event_handler(void *arg, esp_event_base_t event_base,
-							 int32_t event_id, void *event_data)
+static void wifi_sta_ip_events(void *arg, esp_event_base_t event_base,
+							   int32_t event_id, void *event_data)
 {
 	switch (event_id) {
 	case IP_EVENT_STA_GOT_IP:
@@ -81,18 +80,17 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base,
 	}
 }
 
-bool init_wifi_station_and_connect(void)
+bool init_wifi_sta_and_connect(void)
 {
 	wifi_config_t user_config, *config;
 	esp_err_t sta;
 
 	g_wifi_events = xEventGroupCreate();
 
-	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
-							   &wifi_event_handler, NULL);
-	esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler,
+	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_sta_events,
 							   NULL);
-
+	esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+							   &wifi_sta_ip_events, NULL);
 
 	wifi_config_t factory_config = {
 		.sta = {
