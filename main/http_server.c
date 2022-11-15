@@ -50,10 +50,14 @@ static httpd_uri_t echo = {
 	.user_ctx = NULL
 };
 
+bool write_wifi_ap_key(const char *key, uint8_t val[], size_t len);
+bool read_wifi_ap_key(const char *key, uint8_t val[], size_t *len);
+
 static esp_err_t ssid_endpoint(httpd_req_t *req)
 {
 	int ret, len = req->content_len;
 	char buf[32];
+	bool ok;
 
 	/* Read the SSID from the request */
 	ret = httpd_req_recv(req, buf, MIN(len, sizeof(buf)));
@@ -63,8 +67,14 @@ static esp_err_t ssid_endpoint(httpd_req_t *req)
 		return ESP_FAIL;
 	}
 
-	/* Send back the same data */
-	httpd_resp_send_chunk(req, buf, ret);
+	ok = write_wifi_ap_key("ssid", (uint8_t *)buf, ret);
+	if (ok) {
+		/* Send back the same data */
+		httpd_resp_send_chunk(req, buf, ret);
+	} else {
+		const char *str = "Can't save SSID\n"; 
+		httpd_resp_send_chunk(req, str, strlen(str));
+	}
 
 	// End response
 	httpd_resp_send_chunk(req, NULL, 0);
@@ -82,6 +92,7 @@ static esp_err_t password_endpoint(httpd_req_t *req)
 {
 	int ret, len = req->content_len;
 	char buf[64];
+	bool ok;
 
 	/* Read the SSID from the request */
 	ret = httpd_req_recv(req, buf, MIN(len, sizeof(buf)));
@@ -91,8 +102,14 @@ static esp_err_t password_endpoint(httpd_req_t *req)
 		return ESP_FAIL;
 	}
 
-	/* Send back the same data */
-	httpd_resp_send_chunk(req, buf, ret);
+	ok = write_wifi_ap_key("password", (uint8_t *)buf, ret);
+	if (ok) {
+		/* Send back the same data */
+		httpd_resp_send_chunk(req, buf, ret);
+	} else {
+		const char *str = "Can't save password\n"; 
+		httpd_resp_send_chunk(req, str, strlen(str));
+	}
 
 	// End response
 	httpd_resp_send_chunk(req, NULL, 0);
