@@ -285,9 +285,6 @@ static bool init_wifi_station_and_connect(void)
 
 	g_wifi_events = xEventGroupCreate();
 
-	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-	esp_wifi_init(&cfg);
-
 	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
 							   &wifi_event_handler, NULL);
 	esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler,
@@ -333,6 +330,9 @@ static void bridge_task(void *pvParameters)
 {
 	int client = -1;
 	int srv_sock;
+
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	esp_wifi_init(&cfg);
 
 	bool ok = init_wifi_station_and_connect();
 	if (!ok)
