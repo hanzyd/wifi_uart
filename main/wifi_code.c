@@ -80,7 +80,7 @@ static void wifi_sta_ip_events(void *arg, esp_event_base_t event_base,
 	}
 }
 
-bool init_wifi_sta_and_connect(void)
+bool start_wifi_sta_and_connect(void)
 {
 	wifi_config_t user_config, *config;
 	esp_err_t sta;

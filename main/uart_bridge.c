@@ -219,7 +219,7 @@ static void read_uart_send_wifi_task(void *arg)
 }
 
 void httpd_register_for_events(void);
-bool init_wifi_sta_and_connect(void);
+bool start_wifi_sta_and_connect(void);
 
 static void bridge_task(void *pvParameters)
 {
@@ -231,7 +231,7 @@ static void bridge_task(void *pvParameters)
 
 	httpd_register_for_events();
 
-	bool ok = init_wifi_sta_and_connect();
+	bool ok = start_wifi_sta_and_connect();
 	if (!ok)
 		vTaskDelete(NULL);
 
