@@ -182,9 +182,11 @@ static void wifi_ap_events(void *arg, esp_event_base_t event_base,
 void start_wifi_ap(void)
 {
 	wifi_config_t config;
+	uint8_t pass[64];
 	uint8_t mac[6];
 	char ssid[32];
-	int len;
+	size_t len;
+	bool ok;
 
 	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
 							   &wifi_ap_events, NULL);
@@ -194,8 +196,14 @@ void start_wifi_ap(void)
 	len = snprintf(ssid, sizeof(ssid), "UART %02x%02x%02x", mac[2], mac[1], mac[0]);
 
 	memcpy(config.ap.ssid, ssid, sizeof(config.ap.ssid));
-	memcpy(config.ap.password, ssid, MIN(sizeof(config.ap.password), sizeof(ssid)));
 	config.ap.ssid_len = len;
+
+	len = sizeof(pass);
+	ok = read_wifi_ap_key("password", pass, &len);
+	if (ok)
+		memcpy(config.ap.password, pass, len);
+	else
+		memcpy(config.ap.password, ssid, MIN(sizeof(config.ap.password), sizeof(ssid)));
 	config.ap.max_connection = 3;
 	config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
 
