@@ -290,7 +290,6 @@ static bool init_wifi_station_and_connect(void)
 	esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler,
 							   NULL);
 
-	httpd_register_for_events();
 
 	wifi_config_t factory_config = {
 		.sta = {
@@ -333,6 +332,8 @@ static void bridge_task(void *pvParameters)
 
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 	esp_wifi_init(&cfg);
+
+	httpd_register_for_events();
 
 	bool ok = init_wifi_station_and_connect();
 	if (!ok)
