@@ -139,7 +139,7 @@ static void wifi_ap_events(void *arg, esp_event_base_t event_base,
 	}
 }
 
-void init_wifi_ap(void)
+void start_wifi_ap(void)
 {
 	wifi_config_t config;
 	uint8_t mac[6];
@@ -162,4 +162,11 @@ void init_wifi_ap(void)
 	esp_wifi_set_mode(WIFI_MODE_AP);
 	esp_wifi_set_config(ESP_IF_WIFI_AP, &config);
 	esp_wifi_start();
+}
+
+
+void stop_wifi_ap(void)
+{
+	esp_wifi_stop();
+	esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_ap_events);
 }
