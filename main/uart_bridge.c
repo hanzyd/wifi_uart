@@ -220,6 +220,7 @@ static void read_uart_send_wifi_task(void *arg)
 
 void httpd_register_for_events(void);
 bool start_wifi_sta_and_connect(void);
+void start_wifi_ap(void);
 
 static void bridge_task(void *pvParameters)
 {
@@ -233,7 +234,7 @@ static void bridge_task(void *pvParameters)
 
 	bool ok = start_wifi_sta_and_connect();
 	if (!ok)
-		vTaskDelete(NULL);
+		start_wifi_ap();
 
 	srv_sock = init_wifi_server(2); // Initial server configuration.
 	if (srv_sock < 0)
