@@ -50,6 +50,62 @@ static httpd_uri_t echo = {
 	.user_ctx = NULL
 };
 
+static esp_err_t ssid_endpoint(httpd_req_t *req)
+{
+	int ret, len = req->content_len;
+	char buf[32];
+
+	/* Read the SSID from the request */
+	ret = httpd_req_recv(req, buf, MIN(len, sizeof(buf)));
+	if (ret <= 0) {
+		if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+			httpd_resp_send_408(req);
+		return ESP_FAIL;
+	}
+
+	/* Send back the same data */
+	httpd_resp_send_chunk(req, buf, ret);
+
+	// End response
+	httpd_resp_send_chunk(req, NULL, 0);
+	return ESP_OK;
+}
+
+static httpd_uri_t ssid = {
+	.uri = "/ssid",
+	.method = HTTP_POST,
+	.handler = ssid_endpoint,
+	.user_ctx = NULL
+};
+
+static esp_err_t password_endpoint(httpd_req_t *req)
+{
+	int ret, len = req->content_len;
+	char buf[64];
+
+	/* Read the SSID from the request */
+	ret = httpd_req_recv(req, buf, MIN(len, sizeof(buf)));
+	if (ret <= 0) {
+		if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+			httpd_resp_send_408(req);
+		return ESP_FAIL;
+	}
+
+	/* Send back the same data */
+	httpd_resp_send_chunk(req, buf, ret);
+
+	// End response
+	httpd_resp_send_chunk(req, NULL, 0);
+	return ESP_OK;
+}
+
+static httpd_uri_t password = {
+	.uri = "/password",
+	.method = HTTP_POST,
+	.handler = password_endpoint,
+	.user_ctx = NULL
+};
+
 void star_reset_procedure(void);
 
 static esp_err_t reset_endpoint(httpd_req_t *req)
@@ -157,6 +213,8 @@ static httpd_handle_t start_webserver(void)
 		httpd_register_uri_handler(server, &upgrade);
 		httpd_register_uri_handler(server, &reset);
 		httpd_register_uri_handler(server, &info);
+		httpd_register_uri_handler(server, &ssid);
+		httpd_register_uri_handler(server, &password);
 		return server;
 	}
 
