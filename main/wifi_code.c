@@ -123,6 +123,8 @@ bool init_wifi_sta_and_connect(void)
 		return true;
 
 	esp_wifi_stop();
+	esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_sta_events);
+	esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_sta_ip_events);
 	return false;
 }
 
