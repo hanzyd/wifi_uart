@@ -24,7 +24,7 @@
 #include "lwip/sys.h"
 
 
-static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+static void wifi_ap_events_handler(void *arg, esp_event_base_t event_base,
 							   int32_t event_id, void *event_data)
 {
 	switch (event_id) {
@@ -35,7 +35,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
 	}
 }
 
-void wifi_init_soft_access_point(void)
+void wifi_init_ap(void)
 {
 	wifi_config_t config;
 	uint8_t mac[6];
@@ -43,7 +43,7 @@ void wifi_init_soft_access_point(void)
 	int len;
 
 	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
-											   &wifi_event_handler, NULL);
+							   &wifi_ap_events_handler, NULL);
 
     esp_efuse_mac_get_default(mac);
 
