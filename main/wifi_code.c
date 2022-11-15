@@ -126,8 +126,8 @@ bool init_wifi_sta_and_connect(void)
 	return false;
 }
 
-static void wifi_ap_events_handler(void *arg, esp_event_base_t event_base,
-							   int32_t event_id, void *event_data)
+static void wifi_ap_events(void *arg, esp_event_base_t event_base,
+						   int32_t event_id, void *event_data)
 {
 	switch (event_id) {
 		case WIFI_EVENT_AP_STACONNECTED:
@@ -137,7 +137,7 @@ static void wifi_ap_events_handler(void *arg, esp_event_base_t event_base,
 	}
 }
 
-void wifi_init_ap(void)
+void init_wifi_ap(void)
 {
 	wifi_config_t config;
 	uint8_t mac[6];
@@ -145,7 +145,7 @@ void wifi_init_ap(void)
 	int len;
 
 	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
-							   &wifi_ap_events_handler, NULL);
+							   &wifi_ap_events, NULL);
 
     esp_efuse_mac_get_default(mac);
 
