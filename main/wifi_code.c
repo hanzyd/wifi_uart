@@ -45,7 +45,7 @@
 #define MY_NAMESPACE	"wuapp"
 
 /* FreeRTOS event group to signal when we are connected*/
-static EventGroupHandle_t g_wifi_events;
+static EventGroupHandle_t g_wifi_events = NULL;
 static int g_retry_num = 0;
 
 static void wifi_sta_events(void *arg, esp_event_base_t event_base,
@@ -121,7 +121,8 @@ bool start_wifi_sta_and_connect(void)
 	size_t len;
 	bool ok;
 
-	g_wifi_events = xEventGroupCreate();
+	if (!g_wifi_events)
+		g_wifi_events = xEventGroupCreate();
 
 	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_sta_events,
 							   NULL);
@@ -165,6 +166,7 @@ bool start_wifi_sta_and_connect(void)
 	esp_wifi_stop();
 	esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_sta_events);
 	esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_sta_ip_events);
+	xEventGroupClearBits(g_wifi_events, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT);
 	return false;
 }
 
