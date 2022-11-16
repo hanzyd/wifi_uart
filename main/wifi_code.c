@@ -145,10 +145,13 @@ bool start_wifi_sta_and_connect(void)
 	if (ok) 
 		memcpy(config.sta.ssid, ssid, len);
 
-	len = sizeof(password);
+	/* WiFi stack expect '\0' terminated string */
+	len = sizeof(password) - 1;
 	ok = read_wifi_ap_key("password", password, &len);
-	if (ok)
+	if (ok) {
+		memset(config.sta.password, 0, sizeof(config.sta.password));
 		memcpy(config.sta.password, password, len);
+	}
 
 	esp_wifi_set_config(ESP_IF_WIFI_STA, &config);
 	esp_wifi_start();
