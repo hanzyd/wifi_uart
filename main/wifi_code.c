@@ -87,8 +87,9 @@ bool read_wifi_ap_key(const char *key, uint8_t val[], size_t *len)
 	nvs_handle_t nvs;
 	esp_err_t sta;
 
+	memset(val, 0, *len);
 	sta = nvs_open(MY_NAMESPACE, NVS_READONLY, &nvs);
-	if (sta != ESP_OK) 
+	if (sta != ESP_OK)
 		return false;
 
 	sta = nvs_get_blob(nvs, key, val, len);
@@ -134,7 +135,7 @@ bool start_wifi_sta_and_connect(void)
 			.ssid = EXAMPLE_ESP_WIFI_SSID,
 			.password = EXAMPLE_ESP_WIFI_PASS,
 			.threshold.authmode = WIFI_AUTH_WPA2_PSK
-		},
+		}
 	};
 
 	esp_wifi_set_storage(WIFI_STORAGE_FLASH);
@@ -189,11 +190,9 @@ static void wifi_ap_events(void *arg, esp_event_base_t event_base,
 void start_wifi_ap(void)
 {
 	wifi_config_t config;
-	uint8_t pass[64];
+	char ssid[MAX_SSID_LEN];
 	uint8_t mac[6];
-	char ssid[32];
 	size_t len;
-	bool ok;
 
 	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
 							   &wifi_ap_events, NULL);
@@ -202,19 +201,28 @@ void start_wifi_ap(void)
 
 	len = snprintf(ssid, sizeof(ssid), "UART %02x%02x%02x", mac[2], mac[1], mac[0]);
 
-	memcpy(config.ap.ssid, ssid, sizeof(config.ap.ssid));
+	memset(&config, 0, sizeof(config));
+
+	len = MIN(len, sizeof(config.ap.ssid));
+	memcpy(config.ap.ssid, ssid, len);
 	config.ap.ssid_len = len;
 
-	len = sizeof(pass);
-	ok = read_wifi_ap_key("password", pass, &len);
-	if (ok)
-		memcpy(config.ap.password, pass, len);
-	else
-		memcpy(config.ap.password, ssid, MIN(sizeof(config.ap.password), sizeof(ssid)));
+	len = MIN(len, sizeof(config.ap.password));
+	memcpy(config.ap.password, ssid, len);
+
+	esp_wifi_set_storage(WIFI_STORAGE_FLASH);
+	esp_wifi_set_mode(WIFI_MODE_AP);
+
+	const wifi_country_t country = {
+		.cc = "BG",
+		.schan = 1,
+		.nchan = 13,
+		.policy = WIFI_COUNTRY_POLICY_MANUAL
+	};
+
+	esp_wifi_set_country(&country);
 	config.ap.max_connection = 3;
 	config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-
-	esp_wifi_set_mode(WIFI_MODE_AP);
 	esp_wifi_set_config(ESP_IF_WIFI_AP, &config);
 	esp_wifi_start();
 }
