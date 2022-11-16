@@ -56,7 +56,7 @@ bool read_wifi_ap_key(const char *key, uint8_t val[], size_t *len);
 static esp_err_t ssid_endpoint(httpd_req_t *req)
 {
 	int ret, len = req->content_len;
-	char buf[32];
+	char buf[MAX_SSID_LEN];
 	bool ok;
 
 	/* Read the SSID from the request */
@@ -91,7 +91,7 @@ static httpd_uri_t ssid = {
 static esp_err_t password_endpoint(httpd_req_t *req)
 {
 	int ret, len = req->content_len;
-	char buf[64];
+	char buf[MAX_PASSPHRASE_LEN];
 	bool ok;
 
 	/* Read the SSID from the request */

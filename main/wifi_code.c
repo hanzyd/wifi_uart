@@ -117,7 +117,7 @@ bool write_wifi_ap_key(const char *key, uint8_t val[], size_t len)
 
 bool start_wifi_sta_and_connect(void)
 {
-	uint8_t ssid[32], password[64];
+	uint8_t ssid[MAX_SSID_LEN], password[MAX_PASSPHRASE_LEN];
 	size_t len;
 	bool ok;
 
