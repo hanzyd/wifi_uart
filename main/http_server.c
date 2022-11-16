@@ -250,9 +250,19 @@ static void disconnect_handler(void *arg, esp_event_base_t event_base,
 							   int32_t event_id, void *event_data)
 {
 	httpd_handle_t *server = (httpd_handle_t *)arg;
-	if (*server) {
-		stop_webserver(*server);
-		*server = NULL;
+
+	switch (event_id) {
+	case WIFI_EVENT_AP_STOP:
+	case WIFI_EVENT_STA_DISCONNECTED:
+		if (*server) {
+			stop_webserver(*server);
+			*server = NULL;
+		}
+		break;
+	case WIFI_EVENT_AP_START:
+		if (*server == NULL)
+			*server = start_webserver();
+		break;
 	}
 }
 
@@ -260,6 +270,7 @@ static void connect_handler(void *arg, esp_event_base_t event_base,
 							int32_t event_id, void *event_data)
 {
 	httpd_handle_t *server = (httpd_handle_t *)arg;
+	
 	if (*server == NULL)
 		*server = start_webserver();
 }
@@ -268,6 +279,6 @@ void httpd_register_for_events(void)
 {
 	esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, connect_handler,
 							   &g_server);
-	esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED,
+	esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
 							   disconnect_handler, &g_server);
 }
