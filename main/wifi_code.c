@@ -142,8 +142,10 @@ bool start_wifi_sta_and_connect(void)
 
 	len = sizeof(ssid);
 	ok = read_wifi_ap_key("ssid", ssid, &len);
-	if (ok) 
+	if (ok)  {
+		memset(config.sta.ssid, 0, sizeof(config.sta.ssid));
 		memcpy(config.sta.ssid, ssid, len);
+	}
 
 	/* WiFi stack expect '\0' terminated string */
 	len = sizeof(password) - 1;
