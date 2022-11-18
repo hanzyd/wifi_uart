@@ -16,16 +16,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-#include "esp_system.h"
-#include "sdkconfig.h"
-#include <esp_ota_ops.h>
-
 #include <sys/param.h>
+#include <sdkconfig.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <esp_system.h>
+#include <esp_ota_ops.h>
 #include <esp_http_server.h>
+
 
 #define OTA_BUF_SIZE CONFIG_OTA_BUF_SIZE
 

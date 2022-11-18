@@ -8,10 +8,10 @@
 */
 #include <sys/param.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_event.h"
-#include "esp_system.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_event.h>
+#include <esp_system.h>
 
 #include <esp_http_server.h>
 #include <esp_ota_ops.h>
