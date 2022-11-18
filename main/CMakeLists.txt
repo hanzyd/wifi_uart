@@ -1,7 +1,7 @@
 set(srcs
-    "uart_bridge.c"
-    "http_server.c"
-    "ota_upgrade.c"
+    "bridge.c"
+    "http.c"
+    "ota.c"
     "wifi.c"
 	"nvm.c")
 
