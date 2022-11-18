@@ -82,7 +82,7 @@ static void wifi_sta_ip_events(void *arg, esp_event_base_t event_base,
 	}
 }
 
-bool start_wifi_sta_and_connect(void)
+bool wifi_start_sta_and_connect(void)
 {
 	uint8_t ssid[MAX_SSID_LEN], password[MAX_PASSPHRASE_LEN];
 	size_t len;
@@ -153,7 +153,7 @@ static void wifi_ap_events(void *arg, esp_event_base_t event_base,
 	}
 }
 
-void start_wifi_ap(void)
+void wifi_start_ap(void)
 {
 	wifi_config_t config;
 	char ssid[MAX_SSID_LEN];
@@ -194,7 +194,7 @@ void start_wifi_ap(void)
 }
 
 
-void stop_wifi_ap(void)
+void wifi_stop_ap(void)
 {
 	esp_wifi_stop();
 	esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_ap_events);
