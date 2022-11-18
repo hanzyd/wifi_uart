@@ -24,6 +24,7 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
+#include "nvm.h"
 
 /* The examples use WiFi configuration that you can set via project
    configuration menu
@@ -42,7 +43,6 @@
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
 
-#define MY_NAMESPACE	"wuapp"
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t g_wifi_events = NULL;
@@ -82,40 +82,6 @@ static void wifi_sta_ip_events(void *arg, esp_event_base_t event_base,
 	}
 }
 
-bool read_wifi_ap_key(const char *key, uint8_t val[], size_t *len)
-{
-	nvs_handle_t nvs;
-	esp_err_t sta;
-
-	memset(val, 0, *len);
-	sta = nvs_open(MY_NAMESPACE, NVS_READONLY, &nvs);
-	if (sta != ESP_OK)
-		return false;
-
-	sta = nvs_get_blob(nvs, key, val, len);
-
-	nvs_close(nvs);
-
-	return sta == ESP_OK;
-}
-
-bool write_wifi_ap_key(const char *key, uint8_t val[], size_t len)
-{
-	nvs_handle_t nvs;
-	esp_err_t sta;
-
-	sta = nvs_open(MY_NAMESPACE, NVS_READWRITE, &nvs);
-	if (sta != ESP_OK) 
-		return false;
-
-	sta = nvs_set_blob(nvs, key, val, len);
-
-	nvs_close(nvs);
-
-	return sta == ESP_OK;
-}
-
-
 bool start_wifi_sta_and_connect(void)
 {
 	uint8_t ssid[MAX_SSID_LEN], password[MAX_PASSPHRASE_LEN];
@@ -142,7 +108,7 @@ bool start_wifi_sta_and_connect(void)
 	esp_wifi_set_mode(WIFI_MODE_STA);
 
 	len = sizeof(ssid);
-	ok = read_wifi_ap_key("ssid", ssid, &len);
+	ok = nvm_read_key("ssid", ssid, &len);
 	if (ok)  {
 		memset(config.sta.ssid, 0, sizeof(config.sta.ssid));
 		memcpy(config.sta.ssid, ssid, len);
@@ -150,7 +116,7 @@ bool start_wifi_sta_and_connect(void)
 
 	/* WiFi stack expect '\0' terminated string */
 	len = sizeof(password) - 1;
-	ok = read_wifi_ap_key("password", password, &len);
+	ok = nvm_read_key("password", password, &len);
 	if (ok) {
 		memset(config.sta.password, 0, sizeof(config.sta.password));
 		memcpy(config.sta.password, password, len);

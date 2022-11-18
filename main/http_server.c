@@ -16,6 +16,7 @@
 #include <esp_http_server.h>
 #include <esp_ota_ops.h>
 
+#include "nvm.h"
 
 static esp_err_t echo_endpoint(httpd_req_t *req)
 {
@@ -50,8 +51,6 @@ static httpd_uri_t echo = {
 	.user_ctx = NULL
 };
 
-bool write_wifi_ap_key(const char *key, uint8_t val[], size_t len);
-bool read_wifi_ap_key(const char *key, uint8_t val[], size_t *len);
 
 static esp_err_t ssid_endpoint(httpd_req_t *req)
 {
@@ -67,7 +66,7 @@ static esp_err_t ssid_endpoint(httpd_req_t *req)
 		return ESP_FAIL;
 	}
 
-	ok = write_wifi_ap_key("ssid", (uint8_t *)buf, ret);
+	ok = nvm_write_key("ssid", (uint8_t *)buf, ret);
 	if (ok) {
 		/* Send back the same data */
 		httpd_resp_send_chunk(req, buf, ret);
@@ -102,7 +101,7 @@ static esp_err_t password_endpoint(httpd_req_t *req)
 		return ESP_FAIL;
 	}
 
-	ok = write_wifi_ap_key("password", (uint8_t *)buf, ret);
+	ok = nvm_write_key("password", (uint8_t *)buf, ret);
 	if (ok) {
 		/* Send back the same data */
 		httpd_resp_send_chunk(req, buf, ret);
