@@ -16,5 +16,7 @@ menu "Example Configuration"
         int "Maximum retry"
         default 5
         help
-            Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+            Set the Maximum retry to avoid station reconnecting to the
+            AP unlimited when the AP is really inexistent.
+
 endmenu
