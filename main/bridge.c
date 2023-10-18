@@ -27,8 +27,8 @@
 #define SRV_PORT 8888
 
 static QueueHandle_t uart_queue;
-static char rx_buff[128];
-static uint8_t tx_buff[128];
+static char rx_buff[UART_BUF_SIZE];
+static uint8_t tx_buff[UART_BUF_SIZE];
 
 static int init_wifi_server(int backlog)
 {
@@ -173,7 +173,7 @@ static void read_uart_send_wifi_task(void *arg)
 				// time on data event, the queue might be full.
 			case UART_DATA:
 				if (*client < 0) {
-					uart_flush_input(UART_NUM_0);				
+					uart_flush_input(UART_NUM_0);
 				} else {
 					bool ok = read_uart_send_wifi(*client, event.size);
 					if (!ok) {
