@@ -165,7 +165,7 @@ void wifi_start_ap(void)
 
     esp_efuse_mac_get_default(mac);
 
-	len = snprintf(ssid, sizeof(ssid), "UART %02x%02x%02x", mac[2], mac[1], mac[0]);
+	len = snprintf(ssid, sizeof(ssid), "UART %02x%02x%02x", mac[3], mac[4], mac[5]);
 
 	memset(&config, 0, sizeof(config));
 
