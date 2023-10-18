@@ -47,27 +47,31 @@ If no AP is found it will start AP on its own with SSID "UART mac:address:of:the
 Password will be the same as the SSID name. Once connected to the AP you can confiture
 new AP and password to be used on the reboot.
 
-Device will host HTTP server with the following endpoints.
+Find IP address of the device
 
 ```
 $ arp espressif
 ...
 
-$ curl -X GET ${DEV_IP}/info
+wifi_uart_ip="ip.address"
+
+Device will host HTTP server with the following endpoints.
+
+$ curl -X GET ${wifi_uart_ip}/info
 Reset: external pin, Active: app1.bin, Name: wifi_uart, Version: 625ef2c
 
-$ curl -X POST -d "This is an echo test message" ${DEV_IP}/echo -o loopback.txt
+$ curl -X POST -d "This is an echo test message" ${wifi_uart_ip}/echo -o loopback.txt
 
 $ cat loopback.txt
 This is an echo test message
 
-$ curl -X POST -d "SUSE Labs" ${DEV_IP}/ssid
+$ curl -X POST -d "SUSE Labs" ${wifi_uart_ip}/ssid
 
-$ curl -X POST -d "Welcome" ${DEV_IP}/password
+$ curl -X POST -d "Welcome" ${wifi_uart_ip}/password
 
-$ curl -X POST -d "1" ${DEV_IP}/reset
+$ curl -X POST -d "1" ${wifi_uart_ip}/reset
 
-$ curl -X POST -d "@app2.bin" ${DEV_IP}/upgrade
+$ curl -X POST -d "@app2.bin" ${wifi_uart_ip}/upgrade
 
-$ socat -,echo=0 TCP4:${DEV_IP}:8888
+$ socat -,echo=0,raw,escape=0x0f TCP4:${wifi_uart_ip}:8888,keepalive,keepidle=10,keepintvl=10,keepcnt=2
 ```
