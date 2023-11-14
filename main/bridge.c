@@ -30,6 +30,14 @@ static QueueHandle_t uart_queue;
 static char rx_buff[UART_BUF_SIZE];
 static uint8_t tx_buff[UART_BUF_SIZE];
 
+
+static void close_sock(int *sock)
+{
+	shutdown(*sock, SHUT_RDWR);
+	close(*sock);
+	*sock = -1;
+}
+
 static int init_wifi_server(int backlog)
 {
 	struct sockaddr_in srv_addr;
@@ -176,10 +184,8 @@ static void read_uart_send_wifi_task(void *arg)
 					uart_flush_input(UART_NUM_0);
 				} else {
 					bool ok = read_uart_send_wifi(*client, event.size);
-					if (!ok) {
-						close(*client);
-						*client = -1;
-					}
+					if (!ok)
+						close_sock(client);
 				}
 				break;
 
