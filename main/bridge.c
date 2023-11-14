@@ -105,12 +105,15 @@ static void recv_wifi_write_uart_task(void *arg)
 			continue;
 		}
 
-		len = recv(*client, rx_buff, sizeof(rx_buff), 0);
-		if (len > 0) {
-			uart_write_bytes(UART_NUM_0, rx_buff, len);
+		len = recv(*client, rx_buff, sizeof(rx_buff), MSG_DONTWAIT);
+		if (len < 0) {
+			if (errno == EAGAIN) {
+				/* Read timeout occurred, continue reading */
+				continue;
+			}
+			close_sock(client);
 		} else {
-			close(*client);
-			*client = -1;
+			uart_write_bytes(UART_NUM_0, rx_buff, len);
 		}
 	}
 
