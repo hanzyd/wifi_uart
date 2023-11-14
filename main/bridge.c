@@ -141,7 +141,6 @@ static void init_uart(void)
 static bool read_uart_send_wifi(int client, size_t length)
 {
 	ssize_t len, offs, sent;
-	int retry;
 
 	while (length) {
 
@@ -152,7 +151,6 @@ static bool read_uart_send_wifi(int client, size_t length)
 
 		length -= len;
 
-		retry = 0;
 		for (sent = offs = 0; offs < len; offs += sent) {
 
 			sent = send(client, &tx_buff[offs], len - offs, MSG_DONTWAIT);
@@ -161,11 +159,11 @@ static bool read_uart_send_wifi(int client, size_t length)
 
 			if (sent == 0 || (sent < 0 && errno == EAGAIN)) {
 				/* Read timeout occurred, continue reading */
-				retry++;
+				vTaskDelay(1);
 				sent = 0;
 			}
 
-			if (sent < 0 || retry > 5)
+			if (sent < 0)
 				return false;
 		}
 	}
