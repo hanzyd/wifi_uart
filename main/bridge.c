@@ -96,7 +96,7 @@ static void recv_wifi_write_uart_task(void *arg)
 	ssize_t len;
 
 	/* Block for 100ms. */
-	const TickType_t xDelay = 100 / portTICK_PERIOD_MS;
+	const TickType_t xDelay = 10 / portTICK_PERIOD_MS;
 
 	while (true) {
 
