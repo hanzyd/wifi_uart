@@ -271,8 +271,8 @@ static void bridge_task(void *pvParameters)
 void app_main()
 {
 	nvs_flash_init();
-    esp_netif_init();
-    esp_event_loop_create_default();
+	esp_netif_init();
+	esp_event_loop_create_default();
 
 	xTaskCreate(bridge_task, "bridge_task", 1024 * 2, NULL, 2, NULL);
 
