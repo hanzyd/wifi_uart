@@ -105,12 +105,8 @@ static void recv_wifi_write_uart_task(void *arg)
 			continue;
 		}
 
-		len = recv(*client, rx_buff, sizeof(rx_buff), MSG_DONTWAIT);
+		len = recv(*client, rx_buff, sizeof(rx_buff), 0);
 		if (len < 0) {
-			if (errno == EAGAIN) {
-				/* Read timeout occurred, continue reading */
-				continue;
-			}
 			close_sock(client);
 		} else {
 			uart_write_bytes(UART_NUM_0, rx_buff, len);
@@ -153,15 +149,12 @@ static bool read_uart_send_wifi(int client, size_t length)
 
 		for (sent = offs = 0; offs < len; offs += sent) {
 
-			sent = send(client, &tx_buff[offs], len - offs, MSG_DONTWAIT);
+			sent = send(client, &tx_buff[offs], len - offs, 0);
 			if (sent > 0)
 				continue;
 
-			if (sent == 0 || (sent < 0 && errno == EAGAIN)) {
-				/* Read timeout occurred, continue reading */
+			if (sent == 0)
 				vTaskDelay(1);
-				sent = 0;
-			}
 
 			if (sent < 0)
 				return false;
