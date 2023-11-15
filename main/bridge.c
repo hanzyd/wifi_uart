@@ -137,6 +137,7 @@ static void init_uart(void)
 static bool read_uart_send_wifi(int client, size_t length)
 {
 	ssize_t len, offs, sent;
+	int retry;
 
 	while (length) {
 
@@ -147,16 +148,17 @@ static bool read_uart_send_wifi(int client, size_t length)
 
 		length -= len;
 
+		retry = 0;
 		for (sent = offs = 0; offs < len; offs += sent) {
 
 			sent = send(client, &tx_buff[offs], len - offs, 0);
-			if (sent > 0)
-				continue;
-
 			if (sent == 0)
-				vTaskDelay(1);
+				retry++;
 
-			if (sent < 0)
+			if (sent)
+				retry = 0;
+
+   			if (sent < 0 || retry > 5)
 				return false;
 		}
 	}
